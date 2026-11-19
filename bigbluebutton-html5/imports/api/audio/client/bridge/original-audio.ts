@@ -24,7 +24,7 @@ class OriginalAudioPublisher {
   private setUnavailable(unavailable: boolean): void {
     if (unavailable === this.unavailable) return;
     this.unavailable = unavailable;
-    recordAudioEvent(unavailable ? 'OriginalAudioUnavailableEvent' : 'OriginalAudioAvailableEvent', '', this.meetingId);
+    recordAudioEvent(unavailable ? 'OriginalAudioCaptureUnavailableEvent' : 'OriginalAudioCaptureAvailableEvent', '', this.meetingId);
   }
 
   setRoom(name: string, room?: Room, interrupted = false): void {

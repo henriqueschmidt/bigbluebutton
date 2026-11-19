@@ -8,8 +8,8 @@ const RECORD_USER_AUDIO_EVENT = gql`
   }
 `;
 
-type AudioEvent = 'AudioProcessingModeChangedEvent' | 'OriginalAudioUnavailableEvent'
-  | 'OriginalAudioAvailableEvent';
+type AudioEvent = 'AudioProcessingModeChangedEvent' | 'OriginalAudioCaptureUnavailableEvent'
+  | 'OriginalAudioCaptureAvailableEvent';
 
 export default async function recordAudioEvent(event: AudioEvent, mode: string, room = ''): Promise<void> {
   try {
