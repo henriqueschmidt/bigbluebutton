@@ -221,6 +221,7 @@ mediasoup_screenshare_dir = props['mediasoup_screenshare_src']
 webrtc_recorder_video_dir = props['webrtc_recorder_video_src']
 webrtc_recorder_screenshare_dir = props['webrtc_recorder_screenshare_src']
 webrtc_recorder_audio_dir = props['webrtc_recorder_audio_src']
+original_audio_dir = props['webrtc_recorder_original_audio_src']
 log_dir = props['log_dir']
 bn_notes_endpoint = props['bn_notes_endpoint']
 notes_formats = props['notes_formats']
@@ -264,6 +265,9 @@ archive_directory("#{mediasoup_video_dir}/#{meeting_id}", "#{target_dir}/video/#
 remux_and_archive("#{webrtc_recorder_screenshare_dir}/#{meeting_id}", "#{target_dir}/deskshare")
 remux_and_archive("#{webrtc_recorder_video_dir}/#{meeting_id}", "#{target_dir}/video/#{meeting_id}")
 remux_and_archive("#{webrtc_recorder_audio_dir}/#{meeting_id}", "#{target_dir}/audio")
+if original_audio_dir && File.directory?("#{original_audio_dir}/#{meeting_id}")
+  remux_and_archive("#{original_audio_dir}/#{meeting_id}", "#{target_dir}/audio-original")
+end
 
 # If this was the last (or only) segment in a recording, delete the original media files
 if break_timestamp.nil?
@@ -280,6 +284,7 @@ if break_timestamp.nil?
   FileUtils.rm_rf("#{webrtc_recorder_screenshare_dir}/#{meeting_id}")
   FileUtils.rm_rf("#{webrtc_recorder_video_dir}/#{meeting_id}")
   FileUtils.rm_rf("#{webrtc_recorder_audio_dir}/#{meeting_id}")
+  FileUtils.rm_rf("#{original_audio_dir}/#{meeting_id}") if original_audio_dir
 end
 
 if not archive_has_recording_marks?(meeting_id, raw_archive_dir, break_timestamp)

@@ -9,7 +9,8 @@ case class MeetingRecordingPoliciesDbModel(
     record:                  Boolean,
     autoStartRecording:      Boolean,
     allowStartStopRecording: Boolean,
-    keepEvents:              Boolean
+    keepEvents:              Boolean,
+    recordFullDurationMedia: Boolean
 )
 
 class MeetingRecordingPoliciesDbTableDef(tag: Tag) extends Table[MeetingRecordingPoliciesDbModel](tag, "meeting_recordingPolicies") {
@@ -18,9 +19,10 @@ class MeetingRecordingPoliciesDbTableDef(tag: Tag) extends Table[MeetingRecordin
   val autoStartRecording = column[Boolean]("autoStartRecording")
   val allowStartStopRecording = column[Boolean]("allowStartStopRecording")
   val keepEvents = column[Boolean]("keepEvents")
+  val recordFullDurationMedia = column[Boolean]("recordFullDurationMedia")
   //  def fk_meetingId: ForeignKeyQuery[MeetingDbTableDef, MeetingDbModel] = foreignKey("fk_meetingId", meetingId, TableQuery[MeetingDbTableDef])(_.meetingId)
 
-  override def * : ProvenShape[MeetingRecordingPoliciesDbModel] = (meetingId, record, autoStartRecording, allowStartStopRecording, keepEvents) <> (MeetingRecordingPoliciesDbModel.tupled, MeetingRecordingPoliciesDbModel.unapply)
+  override def * : ProvenShape[MeetingRecordingPoliciesDbModel] = (meetingId, record, autoStartRecording, allowStartStopRecording, keepEvents, recordFullDurationMedia) <> (MeetingRecordingPoliciesDbModel.tupled, MeetingRecordingPoliciesDbModel.unapply)
 }
 
 object MeetingRecordingPoliciesDAO {
@@ -32,7 +34,8 @@ object MeetingRecordingPoliciesDAO {
           record = recordProp.record,
           autoStartRecording = recordProp.autoStartRecording,
           allowStartStopRecording = recordProp.allowStartStopRecording,
-          keepEvents = recordProp.keepEvents
+          keepEvents = recordProp.keepEvents,
+          recordFullDurationMedia = recordProp.recordFullDurationMedia
         )
       )
     )

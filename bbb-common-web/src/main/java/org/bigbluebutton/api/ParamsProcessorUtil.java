@@ -982,6 +982,7 @@ public class ParamsProcessorUtil {
                 .withSharedNotesInitialContentMarkdownUrl(sharedNotesInitialContentMarkdownUrl)
                 .withPresentationConversionCacheEnabled(presentationCacheEnabled)
                 .withRecordFullDurationMedia(_recordFullDurationMedia)
+                .withRecordOriginalAudio(Boolean.parseBoolean(params.get(ApiParams.RECORD_ORIGINAL_AUDIO)))
                 .withWebcamsOnlyForModerator(webcamsOnlyForMod)
                 .withMultiUserWhiteboardEnabled(multiUserWhiteboardEnabled)
                 .withMeetingCameraCap(meetingCameraCap)

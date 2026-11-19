@@ -459,6 +459,17 @@ trait HandlerHelpers extends SystemConfiguration {
 }
 
 object HandlerHelpers {
+  val OriginalAudioPurpose = "audio-original"
+  def originalAudioRoom(meetingId: String): String = s"$OriginalAudioPurpose:$meetingId"
+
+  def buildOriginalAudioGrant(meetingId: String): LiveKitGrant =
+    buildLiveKitTokenGrant(
+      room = originalAudioRoom(meetingId),
+      canPublish = true,
+      canSubscribe = false,
+      canPublishSources = List(MicrophoneTrackSource)
+    )
+
   def isUsingLiveKitAudio(liveMeeting: LiveMeeting): Boolean =
     liveMeeting.props.meetingProp.audioBridge == "livekit"
 

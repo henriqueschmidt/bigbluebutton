@@ -5,10 +5,43 @@ import PrimaryLiveKitRoom from '/imports/ui/components/livekit/primary-room/comp
 import SecondaryLiveKitRoom from '/imports/ui/components/livekit/secondary-room/component';
 import BreakoutListenRoom from '/imports/ui/components/livekit/breakout-listen-room/component';
 
-const renderMembership = (m: LiveKitRoomRow) => {
+import { gql } from '@apollo/client';
+import { isMobile } from '/imports/utils/deviceInfo';
+import useDeduplicatedSubscription from '/imports/ui/core/hooks/useDeduplicatedSubscription';
+import {
+  GET_MEETING_RECORDING_DATA,
+  type getMeetingRecordingData,
+} from '/imports/ui/components/nav-bar/nav-bar-graphql/recording-indicator/queries';
+
+const ORIGINAL_AUDIO_RECORDING_POLICY = gql`
+  subscription OriginalAudioRecordingPolicy {
+    meeting_recordingPolicies { recordFullDurationMedia }
+  }
+`;
+
+interface RecordingPolicy {
+  meeting_recordingPolicies: { recordFullDurationMedia: boolean }[];
+}
+
+const OriginalAudioRoom: React.FC<{ membership: LiveKitRoomRow }> = ({ membership }) => {
+  const { data: recording } = useDeduplicatedSubscription<getMeetingRecordingData>(GET_MEETING_RECORDING_DATA);
+  const { data: policy } = useDeduplicatedSubscription<RecordingPolicy>(ORIGINAL_AUDIO_RECORDING_POLICY);
+  const capturing = recording?.meeting_recording[0]?.isRecording
+    || policy?.meeting_recordingPolicies[0]?.recordFullDurationMedia;
+  return (
+    <SecondaryLiveKitRoom membership={membership} recordingOnly recordingEnabled={!!capturing} />
+  );
+};
+
+const renderMembership = (m: LiveKitRoomRow, primaryRoom?: string) => {
   const key = `${m.purpose}:${m.roomName}`;
 
   switch (m.purpose) {
+    case 'audio-original':
+      if (isMobile) return null;
+      return m.roomName === `audio-original:${primaryRoom}`
+        ? <OriginalAudioRoom key={key} membership={m} />
+        : <SecondaryLiveKitRoom key={key} membership={m} recordingOnly />;
     case 'primary':
       return <PrimaryLiveKitRoom key={key} membership={m} />;
     case 'breakout-listen':
@@ -33,7 +66,9 @@ const LiveKitMembershipsManager: React.FC = () => {
 
   if (!shouldUseLiveKit) return null;
 
-  return <>{memberships.map(renderMembership)}</>;
+  const primaryRoom = memberships.find((m) => m.purpose === 'primary')?.roomName;
+
+  return <>{memberships.map((m) => renderMembership(m, primaryRoom))}</>;
 };
 
 export default LiveKitMembershipsManager;

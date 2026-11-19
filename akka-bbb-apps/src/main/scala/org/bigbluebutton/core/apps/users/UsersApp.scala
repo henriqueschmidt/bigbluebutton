@@ -236,6 +236,7 @@ class UsersApp(
   with ChangeUserRoleCmdMsgHdlr
   with SetUserSpeechLocaleMsgHdlr
   with SetUserCaptionLocaleMsgHdlr
+  with RecordUserAudioEventReqMsgHdlr
   with SetUserClientSettingsReqMsgHdlr
   with SetUserEchoTestRunningReqMsgHdlr
   with SetUserSpeechOptionsMsgHdlr

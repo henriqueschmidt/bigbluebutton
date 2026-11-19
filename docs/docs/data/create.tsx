@@ -685,6 +685,13 @@ const createEndpointTableData = [
     "description": (<>Parameter to decide whether to use the caching system in a S3-based storage system for presentation assets per meeting. If this parameter is true, the other settings related to the caching feature must be configured properly (see section <Link to="/administration/customize/#configure-s3-based-cache-for-presentation-assets">Configure S3-based cache for presentation assets</Link>).</>)
   },
   {
+    "name": "recordOriginalAudio",
+    "required": false,
+    "type": "Boolean",
+    "default": false,
+    "description": (<>For filter evaluation in a recorded LiveKit meeting, archive a second microphone track with browser voice processing disabled. Original tracks follow the normal audio recording policy and are stored under <code>recording/raw/&lt;meetingId&gt;/audio-original/</code>. Only the recorder can receive them. Playback uses the normal meeting audio. Breakout rooms inherit this setting. Desktop browsers are supported.</>)
+  },
+  {
     "name": "recordFullDurationMedia",
     "required": false,
     "type": "Boolean",

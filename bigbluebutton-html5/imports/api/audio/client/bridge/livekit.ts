@@ -22,6 +22,7 @@ import {
   filterSupportedConstraints,
   destroyWasmProcessor,
   doGUM,
+  getCapturedAudioMode,
   isWasmProcessingEnabled,
 } from '/imports/api/audio/client/bridge/service';
 import {
@@ -34,7 +35,10 @@ import {
 } from '/imports/ui/services/livekit';
 import { getLiveKitStats } from '/imports/ui/services/livekit/stats';
 import MediaStreamUtils from '/imports/utils/media-stream-utils';
+import { isMobile } from '/imports/utils/deviceInfo';
 import { LIVEKIT_AUDIO_PUBLISH_OPTIONS } from '/imports/ui/core/initial-values/meetingClientSettings';
+import originalAudio from './original-audio';
+import recordAudioEvent from './recording-events';
 import { consumeMuteCommand } from './mute-intent';
 
 const BRIDGE_NAME = 'livekit';
@@ -231,6 +235,7 @@ export default class LiveKitAudioBridge extends BaseAudioBridge {
   set originalStream(stream: MediaStream | null) {
     // eslint-disable-next-line no-underscore-dangle
     this._originalStream = stream;
+    this.syncOriginalAudio();
     const streamData = MediaStreamUtils.getMediaStreamLogData(stream);
     const streamLabel = streamData?.audio?.[0]?.label ?? streamData?.id;
     const streamLogId = streamLabel ? `${streamLabel}=${streamData?.active}` : 'null';
@@ -324,6 +329,7 @@ export default class LiveKitAudioBridge extends BaseAudioBridge {
     const previous = this.activeMicRoom;
     const hadMic = this.isInMicrophoneAudio();
 
+    originalAudio.setMicrophone();
     this.activeMicRoom = target;
     this.activeMicRoomKey = targetKey;
 
@@ -603,8 +609,35 @@ export default class LiveKitAudioBridge extends BaseAudioBridge {
     }, `LiveKit: microphone subscription status changed - ${trackSid} to ${status}`);
   }
 
+  private recordedMicrophoneMode?: { sid: string; mode: string };
+
+  private recordMicrophoneMode(): void {
+    if (isMobile) return;
+    const room = this.activeMicRoom ?? this.primaryRoom;
+    const [publication] = this.getLocalMicTrackPubs();
+    const track = publication?.track?.mediaStreamTrack;
+    if (!room?.name || !track) return;
+    const mode = getCapturedAudioMode(track);
+    if (this.recordedMicrophoneMode?.sid === publication.trackSid
+      && this.recordedMicrophoneMode.mode === mode) return;
+    this.recordedMicrophoneMode = { sid: publication.trackSid, mode };
+    recordAudioEvent('AudioProcessingModeChangedEvent', mode, room.name);
+  }
+
+  private stopOriginalAudio = (): void => originalAudio.setMicrophone();
+
+  private syncOriginalAudio(): void {
+    this.recordMicrophoneMode();
+    const room = this.activeMicRoom ?? this.primaryRoom;
+    const track = this.publicationTrack;
+    const enabled = this.role === SENDRECV_ROLE && !this.shouldBeMuted && !track?.isMuted
+      && room?.state === ConnectionState.Connected;
+    originalAudio.setMicrophone(enabled ? track?.mediaStreamTrack : undefined, enabled ? room?.name : undefined);
+  }
+
   private handleLocalTrackMuted(publication: TrackPublication): void {
     if (!LiveKitAudioBridge.isMicrophonePublication(publication)) return;
+    originalAudio.setMicrophone();
 
     // @ts-ignore
     const LIVEKIT_SETTINGS = window.meetingClientSettings.public.media?.livekit?.audio;
@@ -648,6 +681,7 @@ export default class LiveKitAudioBridge extends BaseAudioBridge {
 
   private handleLocalTrackUnmuted(publication: TrackPublication): void {
     if (!LiveKitAudioBridge.isMicrophonePublication(publication)) return;
+    this.syncOriginalAudio();
 
     const { trackSid, isMuted, trackName } = publication;
 
@@ -688,6 +722,7 @@ export default class LiveKitAudioBridge extends BaseAudioBridge {
 
   private handleLocalTrackPublished(publication: LocalTrackPublication): void {
     if (!LiveKitAudioBridge.isMicrophonePublication(publication)) return;
+    this.syncOriginalAudio();
 
     const { trackSid, trackName } = publication;
 
@@ -711,6 +746,7 @@ export default class LiveKitAudioBridge extends BaseAudioBridge {
 
   private handleLocalTrackUnpublished(publication: LocalTrackPublication): void {
     if (!LiveKitAudioBridge.isMicrophonePublication(publication)) return;
+    originalAudio.setMicrophone();
 
     const { trackSid, trackName } = publication;
 
@@ -728,6 +764,7 @@ export default class LiveKitAudioBridge extends BaseAudioBridge {
   }
 
   private handleRoomReconnecting(): void {
+    originalAudio.setMicrophone();
     this.reconnectingSince = Date.now();
     this.clearServerStateReconcile();
     // The SDK replaces its PeerConnections on a full reconnect; a pending
@@ -742,6 +779,7 @@ export default class LiveKitAudioBridge extends BaseAudioBridge {
     // state, which may have drifted from BBB's authoritative state. Reinforce.
     this.reinforceMuteState('room_reconnected');
     this.reconcileMicPublication('room_reconnected');
+    this.syncOriginalAudio();
   }
 
   private handleRoomConnected(): void {
@@ -891,6 +929,7 @@ export default class LiveKitAudioBridge extends BaseAudioBridge {
   // defenses + publish logging).
   private attachMicObservers(room: Room): void {
     this.detachMicObservers(room);
+    room.on(RoomEvent.Disconnected, this.stopOriginalAudio);
     room.on(RoomEvent.Connected, this.handleRoomConnected);
     room.on(RoomEvent.Reconnecting, this.handleRoomReconnecting);
     room.on(RoomEvent.Reconnected, this.handleRoomReconnected);
@@ -901,6 +940,7 @@ export default class LiveKitAudioBridge extends BaseAudioBridge {
   }
 
   private detachMicObservers(room: Room): void {
+    room.off(RoomEvent.Disconnected, this.stopOriginalAudio);
     room.off(RoomEvent.Connected, this.handleRoomConnected);
     room.off(RoomEvent.Reconnecting, this.handleRoomReconnecting);
     room.off(RoomEvent.Reconnected, this.handleRoomReconnected);
@@ -1129,6 +1169,7 @@ export default class LiveKitAudioBridge extends BaseAudioBridge {
     // This means we're switching to listen-only mode (i.e.: no input device)
     // Remove all input audio tracks from the stream, then return.
     if (deviceId === 'listen-only') {
+      this.stopOriginalAudio();
       const stream = this.inputStream;
 
       if (stream) {
@@ -1341,6 +1382,7 @@ export default class LiveKitAudioBridge extends BaseAudioBridge {
     // unmutes can be reconciled against it (see reinforceMuteState).
     const previousIntent = this.shouldBeMuted;
     this.shouldBeMuted = !shouldEnable;
+    this.syncOriginalAudio();
     this.lastServerMuteState = this.shouldBeMuted;
     const clientInitiated = previousIntent !== this.shouldBeMuted
       && consumeMuteCommand(this.shouldBeMuted);
@@ -2199,6 +2241,7 @@ export default class LiveKitAudioBridge extends BaseAudioBridge {
   }
 
   exitAudio(): Promise<boolean> {
+    originalAudio.setMicrophone();
     const micRoom = this.activeMicRoom ?? this.resolvePrimaryRoom();
     const disableMic = micRoom
       ? micRoom.localParticipant.setMicrophoneEnabled(false)

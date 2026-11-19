@@ -23,6 +23,7 @@ const DEFAULT_OUTPUT_DEVICE_ID = '';
 const INPUT_DEVICE_ID_KEY = 'audioInputDeviceId';
 const OUTPUT_DEVICE_ID_KEY = 'audioOutputDeviceId';
 const AUDIO_PROCESSING_MODES = ['voiceIsolation', 'advanced', 'standard', 'original'];
+const capturedAudioModes = new WeakMap();
 const MIN_WASM_PROCESSING_INTENSITY = 0;
 const MAX_WASM_PROCESSING_INTENSITY = 100;
 
@@ -351,15 +352,48 @@ const retryWithoutDevice = async (audioConstraints, haveWasmProcessor) => {
   }
 };
 
+const markCapturedAudioMode = (stream, mode) => {
+  stream.getAudioTracks().forEach((track) => capturedAudioModes.set(track, mode));
+  return stream;
+};
+
+const getCapturedAudioMode = (track) => {
+  const capturedMode = capturedAudioModes.get(track);
+  if (capturedMode) return capturedMode;
+
+  // LiveKit can reacquire a browser-only microphone itself when switching devices.
+  const mode = getEffectiveAudioProcessingMode();
+  if (mode === 'standard') return mode;
+  if (mode === 'original') {
+    const settings = track.getSettings();
+    const filtersDisabled = Object.keys(DISABLED_MICROPHONE_CONSTRAINTS)
+      .every((key) => settings[key] === false);
+    if (filtersDisabled) return mode;
+  }
+
+  return 'browserFallback';
+};
+
 const doGUM = async (
   constraints, {
+    originalAudio = false,
     adoptProcessorAsPrimary = true,
     retryOnFailure = false,
   } = {},
 ) => {
   let haveWasmProcessor = false;
-  const wasmProcessingEnabled = isWasmProcessingEnabled();
 
+  if (originalAudio) {
+    // Never switch devices or drop the constraints to recover an optional recording.
+    const audio = { ...constraints.audio };
+    Object.keys(DISABLED_MICROPHONE_CONSTRAINTS).forEach((key) => {
+      audio[key] = { exact: false };
+    });
+    return navigator.mediaDevices.getUserMedia({ audio });
+  }
+
+  const mode = getEffectiveAudioProcessingMode();
+  const wasmProcessingEnabled = mode === 'advanced' || mode === 'voiceIsolation';
   // We want only echo-cancel on top of WASM
   if (wasmProcessingEnabled) {
     haveWasmProcessor = await loadWasmProcessor();
@@ -489,7 +523,7 @@ const doGUM = async (
   }, 'Audio getUserMedia succeeded');
 
   if (!haveWasmProcessor) {
-    return stream;
+    return markCapturedAudioMode(stream, wasmProcessingEnabled ? 'browserFallback' : mode);
   }
 
   // Setup the WASM processor stream, but if it fails for any reason, just return
@@ -530,7 +564,7 @@ const doGUM = async (
       },
     }, 'Audio: createWasmProcessorStream succeeded');
 
-    return wasmProcessorStream;
+    return markCapturedAudioMode(wasmProcessorStream, mode);
   } catch (error) {
     logger.warn({
       logCode: 'audio_wasm_processor_stream_failed',
@@ -540,7 +574,7 @@ const doGUM = async (
       },
     }, `createWasmProcessorStream failed: ${error?.message || 'unknown error'}`);
 
-    return stream;
+    return markCapturedAudioMode(stream, 'browserFallback');
   }
 };
 
@@ -587,5 +621,6 @@ export {
   isWasmProcessingEnabled,
   getConstraintsForMode,
   getEffectiveAudioProcessingMode,
+  getCapturedAudioMode,
   getWasmProcessingIntensity,
 };

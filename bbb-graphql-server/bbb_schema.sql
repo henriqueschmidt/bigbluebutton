@@ -75,7 +75,8 @@ create unlogged table "meeting_recordingPolicies" (
 	"record"                    boolean,
 	"autoStartRecording"        boolean,
 	"allowStartStopRecording"   boolean,
-	"keepEvents"                boolean
+	"keepEvents"                boolean,
+	"recordFullDurationMedia"   boolean not null default false
 );
 create view "v_meeting_recordingPolicies" as select * from "meeting_recordingPolicies";
 

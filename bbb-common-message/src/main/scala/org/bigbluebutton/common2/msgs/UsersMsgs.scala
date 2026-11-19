@@ -134,7 +134,8 @@ case class GetRecordingStatusRespMsgBody(
     requestedBy:             String,
     recordUserAudio:         Boolean,
     recordUserCameras:       Boolean,
-    recordUserScreenShare:   Boolean
+    recordUserScreenShare:   Boolean,
+    recordOriginalAudio:     Boolean = false
 )
 
 /**
@@ -267,6 +268,10 @@ case class UserConnectionAliveReqMsgBody(
 /**
  * Sent from client to update clientSettings.
  */
+object RecordUserAudioEventReqMsg { val NAME = "RecordUserAudioEventReqMsg" }
+case class RecordUserAudioEventReqMsg(header: BbbClientMsgHeader, body: RecordUserAudioEventReqMsgBody) extends StandardMsg
+case class RecordUserAudioEventReqMsgBody(event: String, mode: String, room: String)
+
 object SetUserClientSettingsReqMsg { val NAME = "SetUserClientSettingsReqMsg" }
 case class SetUserClientSettingsReqMsg(header: BbbClientMsgHeader, body: SetUserClientSettingsReqMsgBody) extends StandardMsg
 case class SetUserClientSettingsReqMsgBody(userClientSettingsJson: Map[String, Any])

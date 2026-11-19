@@ -28,7 +28,8 @@ trait GetRecordingStatusReqMsgHdlr {
       val body = GetRecordingStatusRespMsgBody(recorded, recording, recordFullDurationMedia, userId,
         recordUserAudio,
         recordUserCameras,
-        recordUserScreenShare)
+        recordUserScreenShare,
+        recordOriginalAudio = liveMeeting.props.recordProp.recordOriginalAudio)
       val header = BbbClientMsgHeader(GetRecordingStatusRespMsg.NAME, meetingId, userId)
       val event = GetRecordingStatusRespMsg(header, body)
 

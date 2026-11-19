@@ -120,6 +120,7 @@ public class ApiParams {
     public static final String END_WHEN_NO_MODERATOR_DELAY_IN_MINUTES = "endWhenNoModeratorDelayInMinutes";
 
     public static final String RECORD_FULL_DURATION_MEDIA = "recordFullDurationMedia";
+    public static final String RECORD_ORIGINAL_AUDIO = "recordOriginalAudio";
 
     public static final String MAX_NUM_PAGES = "maxNumPages";
 
