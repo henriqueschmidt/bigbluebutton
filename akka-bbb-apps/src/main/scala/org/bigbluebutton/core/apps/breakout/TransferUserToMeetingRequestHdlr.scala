@@ -182,15 +182,11 @@ trait TransferUserToMeetingRequestHdlr extends HandlerHelpers with RightsManagem
     outGW.send(req)
     if (liveMeeting.props.recordProp.recordOriginalAudio && state.breakout.exists(_.record)) {
       val originalGrant = HandlerHelpers.buildOriginalAudioGrant(toMeetingId)
-      val originalRoom = LiveKitRoomRef(originalGrant.room, HandlerHelpers.OriginalAudioPurpose)
-      LiveKitMemberships.add(liveMeeting.liveKitMemberships, membership.copy(
-        roomName = originalRoom.roomName,
-        purpose = originalRoom.purpose,
+      HandlerHelpers.requestLiveKitMembershipToken(liveMeeting, outGW, membership.copy(
+        roomName = originalGrant.room,
+        purpose = HandlerHelpers.OriginalAudioPurpose,
         grant = originalGrant
-      ))
-      outGW.send(MsgBuilder.buildGenerateLiveKitTokenReqMsg(
-        parentMeetingId, userId, regUserName, originalRoom, originalGrant, metadata
-      ))
+      ), regUserName)
     }
     scheduleLiveKitMintTimeout(userId, toMeetingId, membership.mintNonce)
     log.info("livekitTransferIntoMeeting: enqueued LK transfer for user={} toMeetingId={}", userId, toMeetingId)
