@@ -3,9 +3,9 @@ package org.bigbluebutton.core.apps.users
 import org.bigbluebutton.common2.msgs.UserJoinMeetingReqMsg
 import org.bigbluebutton.core.apps.breakout.BreakoutHdlrHelpers
 import org.bigbluebutton.core.apps.mediagroups.{ MediaGroupApp }
-import org.bigbluebutton.common2.msgs.{ LiveKitGrant, LiveKitRoomRef }
+import org.bigbluebutton.common2.msgs.LiveKitGrant
 import org.bigbluebutton.core.db.{BreakoutRoomDAO, NotificationDAO, UserDAO, UserStateDAO}
-import org.bigbluebutton.core.models.{ LiveKitMembership, LiveKitMemberships }
+import org.bigbluebutton.core.models.LiveKitMembership
 import org.bigbluebutton.core.domain.MeetingState2x
 import org.bigbluebutton.core.graphql.GraphqlMiddleware
 import org.bigbluebutton.core.models._
@@ -177,29 +177,15 @@ trait UserJoinMeetingReqMsgHdlr extends HandlerHelpers {
     if (isUsingLiveKit(liveMeeting)) {
       val meetingId = liveMeeting.props.meetingProp.intId
       def addMembership(purpose: String, grant: LiveKitGrant): Unit = {
-        val roomName = grant.room
-        val metadata = buildLiveKitParticipantMetadata(liveMeeting)
-        val roomRef  = LiveKitRoomRef(roomName, purpose)
-
         val membership = LiveKitMembership(
-          userId   = regUser.id,
-          roomName = roomName,
-          purpose  = purpose,
-          grant    = grant,
-          metadata = metadata,
-          token    = None,
+          userId = regUser.id,
+          roomName = grant.room,
+          purpose = purpose,
+          grant = grant,
+          metadata = buildLiveKitParticipantMetadata(liveMeeting),
+          token = None,
         )
-        LiveKitMemberships.add(liveMeeting.liveKitMemberships, membership)
-
-        val generateLiveKitTokenReqMsg = MsgBuilder.buildGenerateLiveKitTokenReqMsg(
-          meetingId,
-          regUser.id,
-          regUser.name,
-          roomRef,
-          grant,
-          metadata,
-        )
-        outGW.send(generateLiveKitTokenReqMsg)
+        HandlerHelpers.requestLiveKitMembershipToken(liveMeeting, outGW, membership, regUser.name)
       }
       addMembership("primary", HandlerHelpers.buildLiveKitTokenGrant(
         room = meetingId, canPublish = true, canSubscribe = true
