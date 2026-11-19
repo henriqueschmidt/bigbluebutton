@@ -25,6 +25,7 @@ select_permissions:
         - autoStartRecording
         - keepEvents
         - record
+        - recordFullDurationMedia
       filter:
         meetingId:
           _eq: X-Hasura-MeetingId

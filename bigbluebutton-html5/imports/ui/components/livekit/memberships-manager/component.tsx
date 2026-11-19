@@ -5,29 +5,19 @@ import PrimaryLiveKitRoom from '/imports/ui/components/livekit/primary-room/comp
 import SecondaryLiveKitRoom from '/imports/ui/components/livekit/secondary-room/component';
 import BreakoutListenRoom from '/imports/ui/components/livekit/breakout-listen-room/component';
 
-import { gql } from '@apollo/client';
 import { isMobile } from '/imports/utils/deviceInfo';
 import useDeduplicatedSubscription from '/imports/ui/core/hooks/useDeduplicatedSubscription';
+import MeetingStaticDataStore from '/imports/ui/core/singletons/meetingStaticData';
 import {
   GET_MEETING_RECORDING_DATA,
   type getMeetingRecordingData,
 } from '/imports/ui/components/nav-bar/nav-bar-graphql/recording-indicator/queries';
 
-const ORIGINAL_AUDIO_RECORDING_POLICY = gql`
-  subscription OriginalAudioRecordingPolicy {
-    meeting_recordingPolicies { recordFullDurationMedia }
-  }
-`;
-
-interface RecordingPolicy {
-  meeting_recordingPolicies: { recordFullDurationMedia: boolean }[];
-}
-
 const OriginalAudioRoom: React.FC<{ membership: LiveKitRoomRow }> = ({ membership }) => {
   const { data: recording } = useDeduplicatedSubscription<getMeetingRecordingData>(GET_MEETING_RECORDING_DATA);
-  const { data: policy } = useDeduplicatedSubscription<RecordingPolicy>(ORIGINAL_AUDIO_RECORDING_POLICY);
+  const { recordingPolicies } = MeetingStaticDataStore.getMeetingData();
   const capturing = recording?.meeting_recording[0]?.isRecording
-    || policy?.meeting_recordingPolicies[0]?.recordFullDurationMedia;
+    || recordingPolicies?.recordFullDurationMedia;
   return (
     <SecondaryLiveKitRoom membership={membership} recordingOnly recordingEnabled={!!capturing} />
   );
