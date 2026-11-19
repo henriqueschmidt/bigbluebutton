@@ -701,7 +701,7 @@ class RedisRecorderActor(
   }
 
   private def handleRecordUserAudioEvent(msg: RecordUserAudioEventReqMsg): Unit = {
-    val ev = new UserAudioRecordEvent(msg.body.event, msg.header.userId, msg.body.mode)
+    val ev = new UserAudioRecordEvent(msg.body.event, msg.header.userId)
     ev.setMeetingId(msg.header.meetingId)
     record(msg.header.meetingId, ev.toMap.asJava)
   }

@@ -7,7 +7,6 @@ export default function buildRedisMessage(
 ): RedisMessage {
     throwErrorIfInvalidInput(input, [
         {name: 'event', type: 'string', required: true},
-        {name: 'mode', type: 'string', required: true},
         {name: 'room', type: 'string', required: true},
     ]);
 
@@ -21,6 +20,6 @@ export default function buildRedisMessage(
         eventName,
         routing,
         header: { name: eventName, ...routing },
-        body: { event: input.event, mode: input.mode, room: input.room },
+        body: { event: input.event, room: input.room },
     };
 }

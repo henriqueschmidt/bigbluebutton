@@ -655,7 +655,7 @@ type Mutation {
 }
 
 type Mutation {
-  userRecordAudioEvent(event: String!, mode: String!, room: String!): Boolean
+  userRecordAudioEvent(event: String!, room: String!): Boolean
 }
 
 type Mutation {

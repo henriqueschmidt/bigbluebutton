@@ -11,8 +11,6 @@ trait RecordUserAudioEventReqMsgHdlr {
   val liveMeeting: LiveMeeting
   val outGW: OutMsgRouter
 
-  private val audioModes = Set("standard", "original", "advanced", "voiceIsolation", "browserFallback")
-
   def handleRecordUserAudioEventReqMsg(msg: RecordUserAudioEventReqMsg, state: MeetingState2x): Unit = {
     val policy = liveMeeting.props.recordProp
     val room = msg.body.room
@@ -23,12 +21,8 @@ trait RecordUserAudioEventReqMsgHdlr {
         LiveKitMemberships.findByUserAndRoom(liveMeeting.liveKitMemberships, userId, room)
         .exists(membership => membership.purpose == "breakout-listen" && membership.token.isDefined)
     }
-    val valid = msg.body.event match {
-      case "AudioProcessingModeChangedEvent" => audioModes.contains(msg.body.mode)
-      case "OriginalAudioUnavailableEvent" | "OriginalAudioAvailableEvent" =>
-        policy.recordOriginalAudio && msg.body.mode.isEmpty
-      case _ => false
-    }
+    val originalAudioEvent = msg.body.event == "OriginalAudioUnavailableEvent" || msg.body.event == "OriginalAudioAvailableEvent"
+    val valid = policy.recordOriginalAudio && originalAudioEvent
 
     if (recorded && valid && Users2x.findWithIntId(liveMeeting.users2x, userId).isDefined) {
       val header = msg.header.copy(meetingId = room)
