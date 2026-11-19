@@ -655,10 +655,6 @@ type Mutation {
 }
 
 type Mutation {
-  userRecordAudioEvent(event: String!, room: String!): Boolean
-}
-
-type Mutation {
   userSetClientSettings(
     userClientSettingsJson: json!
   ): Boolean

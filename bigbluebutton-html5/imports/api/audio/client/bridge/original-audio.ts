@@ -2,7 +2,6 @@ import { Track, type Room } from 'livekit-client';
 import logger from '/imports/startup/client/logger';
 import MediaStreamUtils from '/imports/utils/media-stream-utils';
 import { doGUM } from './service';
-import recordAudioEvent from './recording-events';
 
 type Capture = { room: Room; deviceId: string; track?: MediaStreamTrack };
 
@@ -19,25 +18,13 @@ class OriginalAudioPublisher {
 
   private retry?: ReturnType<typeof setTimeout>;
 
-  private unavailable = false;
-
-  private setUnavailable(unavailable: boolean): void {
-    if (unavailable === this.unavailable) return;
-    this.unavailable = unavailable;
-    recordAudioEvent(unavailable ? 'OriginalAudioUnavailableEvent' : 'OriginalAudioAvailableEvent', this.meetingId);
-  }
-
-  setRoom(name: string, room?: Room, interrupted = false): void {
+  setRoom(name: string, room?: Room): void {
     if (room) this.rooms.set(name, room);
     else this.rooms.delete(name);
-    if (interrupted && this.microphone && name === `audio-original:${this.meetingId}`) {
-      this.setUnavailable(true);
-    }
     this.sync();
   }
 
   setMicrophone(track?: MediaStreamTrack, meetingId?: string): void {
-    if (!track || meetingId !== this.meetingId) this.setUnavailable(false);
     this.meetingId = meetingId;
     if (track !== this.microphone) {
       this.microphone?.removeEventListener('ended', this.sync);
@@ -69,7 +56,7 @@ class OriginalAudioPublisher {
     }
     if (!room || !microphoneIsActive) return;
     if (!deviceId) {
-      this.setUnavailable(true);
+      this.logFailure(new Error('Original audio microphone device is unavailable'));
       return;
     }
     const next = { room, deviceId };
@@ -77,7 +64,6 @@ class OriginalAudioPublisher {
     this.publish(next).catch((error) => {
       if (this.capture !== next) return;
       this.capture = undefined;
-      this.setUnavailable(true);
       this.logFailure(error);
       this.retry = setTimeout(this.sync, 5_000);
     });
@@ -102,11 +88,10 @@ class OriginalAudioPublisher {
         await capture.room.localParticipant.unpublishTrack(track);
         return;
       }
-      this.setUnavailable(false);
       track.addEventListener('ended', () => {
         if (this.capture !== capture) return;
         this.capture = undefined;
-        this.setUnavailable(true);
+        this.logFailure(new Error('Original audio microphone track ended'));
         capture.room.localParticipant.unpublishTrack(track).catch(this.logFailure);
         this.retry = setTimeout(this.sync, 5_000);
       }, { once: true });

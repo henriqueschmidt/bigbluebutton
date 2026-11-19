@@ -507,7 +507,6 @@ class MeetingActor(
       case m: SetUserSpeechOptionsReqMsg   => usersApp.handleSetUserSpeechOptionsReqMsg(m)
       case m: GetRecordingStatusReqMsg     => usersApp.handleGetRecordingStatusReqMsg(m)
       case m: SetUserCaptionLocaleReqMsg   => usersApp.handleSetUserCaptionLocaleReqMsg(m)
-      case m: RecordUserAudioEventReqMsg   => usersApp.handleRecordUserAudioEventReqMsg(m, state)
       case m: SetUserClientSettingsReqMsg  => usersApp.handleSetUserClientSettingsReqMsg(m)
       case m: SetUserEchoTestRunningReqMsg => usersApp.handleSetUserEchoTestRunningReqMsg(m)
       case m: GenerateLiveKitTokenRespMsg  => handleGenerateLiveKitTokenRespMsg(m)

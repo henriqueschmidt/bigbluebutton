@@ -96,7 +96,6 @@ class RedisRecorderActor(
       case m: UserBroadcastCamStoppedEvtMsg         => handleUserBroadcastCamStoppedEvtMsg(m)
 
       // Voice
-      case m: RecordUserAudioEventReqMsg            => handleRecordUserAudioEvent(m)
       case m: UserJoinedVoiceConfToClientEvtMsg     => handleUserJoinedVoiceConfToClientEvtMsg(m)
       case m: UserLeftVoiceConfToClientEvtMsg       => handleUserLeftVoiceConfToClientEvtMsg(m)
       case m: UserMutedVoiceEvtMsg                  => handleUserMutedVoiceEvtMsg(m)
@@ -697,12 +696,6 @@ class RedisRecorderActor(
     ev.setMeetingId(msg.header.meetingId)
     ev.setTrack(msg.body.track)
 
-    record(msg.header.meetingId, ev.toMap.asJava)
-  }
-
-  private def handleRecordUserAudioEvent(msg: RecordUserAudioEventReqMsg): Unit = {
-    val ev = new UserAudioRecordEvent(msg.body.event, msg.header.userId)
-    ev.setMeetingId(msg.header.meetingId)
     record(msg.header.meetingId, ev.toMap.asJava)
   }
 
