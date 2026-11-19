@@ -55,7 +55,8 @@ class OriginalAudioPublisher {
     clearTimeout(this.retry);
     const { meetingId, microphone, capture } = this;
     const room = meetingId ? this.rooms.get(`audio-original:${meetingId}`) : undefined;
-    const deviceId = room && microphone?.readyState === 'live' && microphone.enabled && !microphone.muted
+    const microphoneIsActive = microphone?.readyState === 'live' && microphone.enabled && !microphone.muted;
+    const deviceId = room && microphoneIsActive
       ? MediaStreamUtils.extractDeviceIdFromStream(new MediaStream([microphone]), 'audio') : null;
     if (capture && capture.room === room && capture.deviceId === deviceId) return;
 
@@ -66,8 +67,7 @@ class OriginalAudioPublisher {
       capture.track.stop();
       capture.room.localParticipant.unpublishTrack(capture.track).catch(this.logFailure);
     }
-    if (!room || !microphone || microphone.readyState !== 'live'
-      || !microphone.enabled || microphone.muted) return;
+    if (!room || !microphoneIsActive) return;
     if (!deviceId) {
       this.setUnavailable(true);
       return;
