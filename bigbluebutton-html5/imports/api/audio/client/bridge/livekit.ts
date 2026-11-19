@@ -22,6 +22,7 @@ import {
   filterSupportedConstraints,
   destroyWasmProcessor,
   doGUM,
+  getCapturedAudioMode,
   isWasmProcessingEnabled,
 } from '/imports/api/audio/client/bridge/service';
 import {
@@ -34,8 +35,10 @@ import {
 } from '/imports/ui/services/livekit';
 import { getLiveKitStats } from '/imports/ui/services/livekit/stats';
 import MediaStreamUtils from '/imports/utils/media-stream-utils';
+import { isMobile } from '/imports/utils/deviceInfo';
 import { LIVEKIT_AUDIO_PUBLISH_OPTIONS } from '/imports/ui/core/initial-values/meetingClientSettings';
 import originalAudio from './original-audio';
+import recordAudioEvent from './recording-events';
 import { consumeMuteCommand } from './mute-intent';
 
 const BRIDGE_NAME = 'livekit';
@@ -606,9 +609,25 @@ export default class LiveKitAudioBridge extends BaseAudioBridge {
     }, `LiveKit: microphone subscription status changed - ${trackSid} to ${status}`);
   }
 
+  private recordedMicrophoneMode?: { sid: string; mode: string };
+
+  private recordMicrophoneMode(): void {
+    if (isMobile) return;
+    const room = this.activeMicRoom ?? this.primaryRoom;
+    const [publication] = this.getLocalMicTrackPubs();
+    const track = publication?.track?.mediaStreamTrack;
+    if (!room?.name || !track) return;
+    const mode = getCapturedAudioMode(track);
+    if (this.recordedMicrophoneMode?.sid === publication.trackSid
+      && this.recordedMicrophoneMode.mode === mode) return;
+    this.recordedMicrophoneMode = { sid: publication.trackSid, mode };
+    recordAudioEvent('AudioProcessingModeChangedEvent', mode, room.name);
+  }
+
   private stopOriginalAudio = (): void => originalAudio.setMicrophone();
 
   private syncOriginalAudio(): void {
+    this.recordMicrophoneMode();
     const room = this.activeMicRoom ?? this.primaryRoom;
     const track = this.publicationTrack;
     const enabled = this.role === SENDRECV_ROLE && !this.shouldBeMuted && !track?.isMuted

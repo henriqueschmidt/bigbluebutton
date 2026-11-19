@@ -270,7 +270,7 @@ case class UserConnectionAliveReqMsgBody(
  */
 object RecordUserAudioEventReqMsg { val NAME = "RecordUserAudioEventReqMsg" }
 case class RecordUserAudioEventReqMsg(header: BbbClientMsgHeader, body: RecordUserAudioEventReqMsgBody) extends StandardMsg
-case class RecordUserAudioEventReqMsgBody(event: String, room: String)
+case class RecordUserAudioEventReqMsgBody(event: String, mode: String, room: String)
 
 object SetUserClientSettingsReqMsg { val NAME = "SetUserClientSettingsReqMsg" }
 case class SetUserClientSettingsReqMsg(header: BbbClientMsgHeader, body: SetUserClientSettingsReqMsgBody) extends StandardMsg

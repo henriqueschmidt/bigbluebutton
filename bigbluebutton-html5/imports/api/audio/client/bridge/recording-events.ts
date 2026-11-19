@@ -3,18 +3,19 @@ import apolloContextHolder from '/imports/ui/core/graphql/apolloContextHolder/ap
 import logger from '/imports/startup/client/logger';
 
 const RECORD_USER_AUDIO_EVENT = gql`
-  mutation RecordUserAudioEvent($event: String!, $room: String!) {
-    userRecordAudioEvent(event: $event, room: $room)
+  mutation RecordUserAudioEvent($event: String!, $mode: String!, $room: String!) {
+    userRecordAudioEvent(event: $event, mode: $mode, room: $room)
   }
 `;
 
-type AudioEvent = 'OriginalAudioUnavailableEvent' | 'OriginalAudioAvailableEvent';
+type AudioEvent = 'AudioProcessingModeChangedEvent' | 'OriginalAudioUnavailableEvent'
+  | 'OriginalAudioAvailableEvent';
 
-export default async function recordAudioEvent(event: AudioEvent, room = ''): Promise<void> {
+export default async function recordAudioEvent(event: AudioEvent, mode: string, room = ''): Promise<void> {
   try {
     await apolloContextHolder.getClient().mutate({
       mutation: RECORD_USER_AUDIO_EVENT,
-      variables: { event, room },
+      variables: { event, mode, room },
     });
   } catch (error) {
     logger.warn({
