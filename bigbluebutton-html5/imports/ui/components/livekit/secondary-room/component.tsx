@@ -1,8 +1,11 @@
 import React, {
-  useEffect, useRef, useState, useMemo,
+  useEffect, useRef, useState, useMemo, useCallback,
 } from 'react';
-import { LogLevel, type Room } from 'livekit-client';
+import {
+  ConnectionState, LogLevel, RoomEvent, Room,
+} from 'livekit-client';
 import { RoomAudioRenderer } from '@livekit/components-react';
+import originalAudio from '/imports/api/audio/client/bridge/original-audio';
 import Auth from '/imports/ui/services/auth';
 import useMeetingSettings from '/imports/ui/core/local-states/useMeetingSettings';
 import {
@@ -30,6 +33,8 @@ type SecondaryRoomCapableBridge = {
 interface SecondaryLiveKitRoomProps {
   membership: LiveKitRoomRow;
   membershipKey?: MembershipKey;
+  recordingOnly?: boolean;
+  recordingEnabled?: boolean;
   // When true, attaches the LK audio bridge to this Room.
   // Required for purposes that expect the user to publish audio into the
   // secondary room with controls in the main room.
@@ -48,6 +53,8 @@ const SecondaryLiveKitRoom: React.FC<SecondaryLiveKitRoomProps> = ({
   membership,
   membershipKey,
   attachToAudioBridge = false,
+  recordingOnly = false,
+  recordingEnabled = true,
   onReconnectExhausted,
   onTerminalDisconnect,
 }) => {
@@ -63,9 +70,30 @@ const SecondaryLiveKitRoom: React.FC<SecondaryLiveKitRoomProps> = ({
 
   const key: MembershipKey = membershipKey ?? `${membership.purpose}:${membership.roomName}`;
 
-  const [room] = useState(() => liveKitRoomRegistry.acquire(key, roomOptions));
+  const [room] = useState(() => (
+    recordingOnly ? new Room(roomOptions) : liveKitRoomRegistry.acquire(key, roomOptions)
+  ));
   const bridgeReady = useIsUsingLiveKitAudio();
   const attachedRef = useRef(false);
+
+  useEffect(() => {
+    if (!recordingOnly) return undefined;
+    const name = membership.roomName;
+    const update = () => {
+      const connected = recordingEnabled && room.state === ConnectionState.Connected;
+      originalAudio.setRoom(name, connected ? room : undefined);
+    };
+    room.on(RoomEvent.ConnectionStateChanged, update);
+    update();
+    return () => {
+      room.off(RoomEvent.ConnectionStateChanged, update);
+      originalAudio.setRoom(name);
+    };
+  }, [room, recordingOnly, recordingEnabled, membership.roomName]);
+
+  const reportRecordingRoomFailure = useCallback(() => {
+    if (recordingEnabled) originalAudio.setRoom(membership.roomName);
+  }, [membership.roomName, recordingEnabled]);
 
   // Bridge attachment
   useEffect(() => {
@@ -92,9 +120,9 @@ const SecondaryLiveKitRoom: React.FC<SecondaryLiveKitRoomProps> = ({
         bridge.detachSecondaryRoom();
       }
 
-      liveKitRoomRegistry.release(key);
+      if (!recordingOnly) liveKitRoomRegistry.release(key);
     };
-  }, [room, key]);
+  }, [room, key, recordingOnly]);
 
   const { sessionToken } = Auth;
 
@@ -112,14 +140,14 @@ const SecondaryLiveKitRoom: React.FC<SecondaryLiveKitRoomProps> = ({
       sdkLogBridge={sdkLogBridge}
       audio={false}
       video={false}
-      withAutoSubscribe
+      withAutoSubscribe={!recordingOnly}
       reconnectOnFatalFailures={reconnectOnFatalFailures}
       logPrefix={`livekit_secondary_${membership.roomName}`}
       maxConnAttempts={SECONDARY_RECONNECT_ATTEMPTS}
-      onReconnectExhausted={onReconnectExhausted}
-      onTerminalDisconnect={onTerminalDisconnect}
+      onReconnectExhausted={recordingOnly ? reportRecordingRoomFailure : onReconnectExhausted}
+      onTerminalDisconnect={recordingOnly ? reportRecordingRoomFailure : onTerminalDisconnect}
     >
-      <RoomAudioRenderer volume={speakerLevel} />
+      {!recordingOnly && <RoomAudioRenderer volume={speakerLevel} />}
     </BaseLiveKitRoom>
   );
 };

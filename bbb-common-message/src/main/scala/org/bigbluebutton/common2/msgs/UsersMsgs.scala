@@ -134,7 +134,8 @@ case class GetRecordingStatusRespMsgBody(
     requestedBy:             String,
     recordUserAudio:         Boolean,
     recordUserCameras:       Boolean,
-    recordUserScreenShare:   Boolean
+    recordUserScreenShare:   Boolean,
+    recordOriginalAudio:     Boolean = false
 )
 
 /**

@@ -26,6 +26,7 @@ export interface MeetingStaticData {
     allowStartStopRecording: boolean;
     autoStartRecording: boolean;
     record: boolean;
+    recordFullDurationMedia: boolean;
     keepEvents: boolean;
   } | null;
   usersPolicies: {

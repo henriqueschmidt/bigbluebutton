@@ -74,6 +74,7 @@ public class Meeting {
 	private String sharedNotesInitialContentMarkdown = "";
 	private boolean presentationConversionCacheEnabled = false;
 	private boolean recordFullDurationMedia = false;
+	private boolean recordOriginalAudio;
 	private boolean haveRecordingMarks = false;
 	private boolean webcamsOnlyForModerator = false;
 	private boolean multiUserWhiteboardEnabled = false;
@@ -181,6 +182,7 @@ public class Meeting {
 		sharedNotesInitialContentMarkdown = builder.sharedNotesInitialContentMarkdown;
 		presentationConversionCacheEnabled = builder.presentationConversionCacheEnabled;
         recordFullDurationMedia = builder.recordFullDurationMedia;
+        recordOriginalAudio = builder.recordOriginalAudio;
         webcamsOnlyForModerator = builder.webcamsOnlyForModerator;
         multiUserWhiteboardEnabled = builder.multiUserWhiteboardEnabled;
         meetingCameraCap = builder.meetingCameraCap;
@@ -709,6 +711,10 @@ public class Meeting {
 		return presentationConversionCacheEnabled;
 	}
 
+	public boolean getRecordOriginalAudio() {
+		return recordOriginalAudio;
+	}
+
 	public boolean getRecordFullDurationMedia() {
 		return recordFullDurationMedia;
 	}
@@ -1038,6 +1044,7 @@ public class Meeting {
     	private boolean record;
     	private boolean autoStartRecording;
     	private boolean recordFullDurationMedia;
+        private boolean recordOriginalAudio;
         private boolean allowStartStopRecording;
 		private String sharedNotesInitialContentJsonUrl;
 		private String sharedNotesInitialContentMarkdownUrl;
@@ -1147,6 +1154,11 @@ public class Meeting {
     		this.presentationConversionCacheEnabled = cacheEnabled;
     		return this;
     	}
+
+			public Builder withRecordOriginalAudio(boolean recordOriginalAudio) {
+				this.recordOriginalAudio = recordOriginalAudio;
+				return this;
+			}
 
 			public Builder withRecordFullDurationMedia(boolean recordFullDurationMedia) {
 				this.recordFullDurationMedia = recordFullDurationMedia;

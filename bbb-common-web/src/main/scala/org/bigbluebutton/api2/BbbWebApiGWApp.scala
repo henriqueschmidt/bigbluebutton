@@ -129,6 +129,7 @@ class BbbWebApiGWApp(
                     sharedNotesInitialContentJson: java.util.ArrayList[AnyRef],
                     sharedNotesInitialContentMarkdown: java.lang.String,
                     recordFullDurationMedia: java.lang.Boolean,
+                    recordOriginalAudio: java.lang.Boolean,
                     webcamsOnlyForModerator: java.lang.Boolean,
                     multiUserWhiteboardEnabled: java.lang.Boolean,
                     meetingCameraCap: java.lang.Integer,
@@ -221,6 +222,7 @@ class BbbWebApiGWApp(
     val recordProp = RecordProp(record = recorded.booleanValue(), autoStartRecording = autoStartRecording.booleanValue(),
       allowStartStopRecording = allowStartStopRecording.booleanValue(),
       recordFullDurationMedia = recordFullDurationMedia.booleanValue(),
+      recordOriginalAudio = recordOriginalAudio.booleanValue(),
       keepEvents = keepEvents.booleanValue())
 
     val breakoutProps = BreakoutProps(

@@ -25,7 +25,7 @@ export const useHasActiveNonPrimaryMembership = (): boolean => {
   const memberships = useUserLiveKitMemberships();
 
   return useMemo(
-    () => memberships.some((m) => m.purpose !== 'primary'),
+    () => memberships.some((m) => m.purpose !== 'primary' && m.purpose !== 'audio-original'),
     [memberships],
   );
 };

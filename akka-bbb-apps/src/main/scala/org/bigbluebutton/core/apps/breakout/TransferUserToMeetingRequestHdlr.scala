@@ -180,6 +180,14 @@ trait TransferUserToMeetingRequestHdlr extends HandlerHelpers with RightsManagem
       metadata
     )
     outGW.send(req)
+    if (liveMeeting.props.recordProp.recordOriginalAudio && state.breakout.exists(_.record)) {
+      val originalGrant = HandlerHelpers.buildOriginalAudioGrant(toMeetingId)
+      HandlerHelpers.requestLiveKitMembershipToken(liveMeeting, outGW, membership.copy(
+        roomName = originalGrant.room,
+        purpose = HandlerHelpers.OriginalAudioPurpose,
+        grant = originalGrant
+      ), regUserName)
+    }
     scheduleLiveKitMintTimeout(userId, toMeetingId, membership.mintNonce)
     log.info("livekitTransferIntoMeeting: enqueued LK transfer for user={} toMeetingId={}", userId, toMeetingId)
   }
@@ -215,6 +223,11 @@ trait TransferUserToMeetingRequestHdlr extends HandlerHelpers with RightsManagem
     LiveKitMemberships.findByUserAndRoom(liveMeeting.liveKitMemberships, userId, fromMeetingId) match {
       case Some(m) if m.purpose == "breakout-listen" =>
         LiveKitMemberships.removeByRoom(liveMeeting.liveKitMemberships, userId, fromMeetingId)
+        val originalRoom = HandlerHelpers.originalAudioRoom(fromMeetingId)
+        if (LiveKitMemberships.findByUserAndRoom(liveMeeting.liveKitMemberships, userId, originalRoom).isDefined) {
+          LiveKitMemberships.removeByRoom(liveMeeting.liveKitMemberships, userId, originalRoom)
+          outGW.send(MsgBuilder.buildRemoveLiveKitParticipantSysMsg(parentMeetingId, originalRoom, userId))
+        }
         // Mark the breakout's transferred user row loggedOut (same as FS-return);
         UserDAO.logOutTransferredUser(fromMeetingId, userId)
         MediaGroupUserDAO.deleteAllForUser(fromMeetingId, userId)

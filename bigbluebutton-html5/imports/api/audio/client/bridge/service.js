@@ -353,13 +353,23 @@ const retryWithoutDevice = async (audioConstraints, haveWasmProcessor) => {
 
 const doGUM = async (
   constraints, {
+    originalAudio = false,
     adoptProcessorAsPrimary = true,
     retryOnFailure = false,
   } = {},
 ) => {
   let haveWasmProcessor = false;
-  const wasmProcessingEnabled = isWasmProcessingEnabled();
 
+  if (originalAudio) {
+    // Never switch devices or drop the constraints to recover an optional recording.
+    const audio = { ...constraints.audio };
+    Object.keys(DISABLED_MICROPHONE_CONSTRAINTS).forEach((key) => {
+      audio[key] = { exact: false };
+    });
+    return navigator.mediaDevices.getUserMedia({ audio });
+  }
+
+  const wasmProcessingEnabled = isWasmProcessingEnabled();
   // We want only echo-cancel on top of WASM
   if (wasmProcessingEnabled) {
     haveWasmProcessor = await loadWasmProcessor();

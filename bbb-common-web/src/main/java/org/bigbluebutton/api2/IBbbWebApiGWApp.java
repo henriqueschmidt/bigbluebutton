@@ -23,6 +23,7 @@ public interface IBbbWebApiGWApp {
                      ArrayList<Object> sharedNotesInitialContentJson,
                      String sharedNotesInitialContentMarkdown,
                      Boolean recordFullDurationMedia,
+                     Boolean recordOriginalAudio,
                      Boolean webcamsOnlyForModerator,
                      Boolean multiUserWhiteboardEnabled,
                      Integer meetingCameraCap,

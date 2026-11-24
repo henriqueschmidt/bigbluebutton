@@ -646,7 +646,7 @@ public class MeetingService implements MessageListener {
 
     gw.createMeeting(m.getInternalId(), m.getExternalId(), m.getParentMeetingId(), m.getName(), m.isRecord(),
             m.getTelVoice(), m.getDuration(), m.getAutoStartRecording(), m.getAllowStartStopRecording(),
-            m.getSharedNotesInitialContentJson(), m.getSharedNotesInitialContentMarkdown(), m.getRecordFullDurationMedia(),
+            m.getSharedNotesInitialContentJson(), m.getSharedNotesInitialContentMarkdown(), m.getRecordFullDurationMedia(), m.getRecordOriginalAudio(),
             m.getWebcamsOnlyForModerator(), m.getMultiUserWhiteboardEnabled(), m.getMeetingCameraCap(), m.getUserCameraCap(), m.getMaxPinnedCameras(),
             m.getCameraBridge(),
             m.getScreenShareBridge(),
@@ -889,6 +889,7 @@ public class MeetingService implements MessageListener {
       int durationInMinutes = message.durationInSeconds > 0 ? ((message.durationInSeconds + 59) / 60) : 0;
       params.put(ApiParams.DURATION, Integer.toString(durationInMinutes));
       params.put(ApiParams.RECORD, message.record.toString());
+      params.put(ApiParams.RECORD_ORIGINAL_AUDIO, Boolean.toString(parentMeeting.getRecordOriginalAudio()));
       params.put(ApiParams.AUTO_START_RECORDING, message.autoStartRecording.toString());
       params.put(ApiParams.ALLOW_START_STOP_RECORDING, message.allowStartStopRecording.toString());
       params.put(ApiParams.MEETING_KEEP_EVENTS, parentMeeting.getMeetingKeepEvents().toString());
