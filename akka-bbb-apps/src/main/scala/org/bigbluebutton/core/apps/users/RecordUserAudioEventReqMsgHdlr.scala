@@ -25,8 +25,6 @@ trait RecordUserAudioEventReqMsgHdlr {
     }
     val valid = msg.body.event match {
       case "AudioProcessingModeChangedEvent" => audioModes.contains(msg.body.mode)
-      case "OriginalAudioCaptureUnavailableEvent" | "OriginalAudioCaptureAvailableEvent" =>
-        policy.recordOriginalAudio && msg.body.mode.isEmpty
       case _ => false
     }
 

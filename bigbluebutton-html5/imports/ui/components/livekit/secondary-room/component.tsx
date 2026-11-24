@@ -81,8 +81,7 @@ const SecondaryLiveKitRoom: React.FC<SecondaryLiveKitRoomProps> = ({
     const name = membership.roomName;
     const update = () => {
       const connected = recordingEnabled && room.state === ConnectionState.Connected;
-      const interrupted = recordingEnabled && room.state === ConnectionState.Reconnecting;
-      originalAudio.setRoom(name, connected ? room : undefined, interrupted);
+      originalAudio.setRoom(name, connected ? room : undefined);
     };
     room.on(RoomEvent.ConnectionStateChanged, update);
     update();
@@ -93,7 +92,7 @@ const SecondaryLiveKitRoom: React.FC<SecondaryLiveKitRoomProps> = ({
   }, [room, recordingOnly, recordingEnabled, membership.roomName]);
 
   const reportRecordingRoomFailure = useCallback(() => {
-    if (recordingEnabled) originalAudio.setRoom(membership.roomName, undefined, true);
+    if (recordingEnabled) originalAudio.setRoom(membership.roomName);
   }, [membership.roomName, recordingEnabled]);
 
   // Bridge attachment
