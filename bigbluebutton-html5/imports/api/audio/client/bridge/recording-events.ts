@@ -10,16 +10,19 @@ const RECORD_USER_AUDIO_EVENT = gql`
 
 type AudioEvent = 'AudioProcessingModeChangedEvent';
 
-export default async function recordAudioEvent(event: AudioEvent, mode: string, room = ''): Promise<void> {
+export default async function recordAudioEvent(event: AudioEvent, mode: string, room: string): Promise<boolean> {
   try {
-    await apolloContextHolder.getClient().mutate({
+    const { data } = await apolloContextHolder.getClient().mutate<{ userRecordAudioEvent: boolean }>({
       mutation: RECORD_USER_AUDIO_EVENT,
       variables: { event, mode, room },
     });
+    if (data?.userRecordAudioEvent !== true) throw new Error('Audio event submission was not acknowledged');
+    return true;
   } catch (error) {
     logger.warn({
       logCode: 'audio_recording_event_failed',
       extraInfo: { event, error: (error as Error).message },
     }, 'Could not record audio event');
+    return false;
   }
 }
