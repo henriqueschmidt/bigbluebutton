@@ -22,6 +22,7 @@ import {
   filterSupportedConstraints,
   destroyWasmProcessor,
   doGUM,
+  getCapturedAudioMode,
   isWasmProcessingEnabled,
 } from '/imports/api/audio/client/bridge/service';
 import {
@@ -33,9 +34,12 @@ import {
   type MembershipKey,
 } from '/imports/ui/services/livekit';
 import { getLiveKitStats } from '/imports/ui/services/livekit/stats';
+import MeetingStaticDataStore from '/imports/ui/core/singletons/meetingStaticData';
 import MediaStreamUtils from '/imports/utils/media-stream-utils';
+import { isMobile } from '/imports/utils/deviceInfo';
 import { LIVEKIT_AUDIO_PUBLISH_OPTIONS } from '/imports/ui/core/initial-values/meetingClientSettings';
 import originalAudio from './original-audio';
+import recordAudioEvent from './recording-events';
 import { consumeMuteCommand } from './mute-intent';
 
 const BRIDGE_NAME = 'livekit';
@@ -606,9 +610,48 @@ export default class LiveKitAudioBridge extends BaseAudioBridge {
     }, `LiveKit: microphone subscription status changed - ${trackSid} to ${status}`);
   }
 
+  private recordedMicrophoneMode?: string;
+
+  private queuedMicrophoneMode?: { key: string };
+
+  private microphoneModeRequests = Promise.resolve();
+
+  private recordMicrophoneMode(): void {
+    // Mode history is part of desktop audio filter evaluation.
+    if (isMobile) return;
+    const roomName = (this.activeMicRoom ?? this.primaryRoom)?.name;
+    if (!roomName) return;
+
+    // Static data describes the meeting the client joined. The server checks
+    // the recording policy of a transferred breakout microphone separately.
+    if (MeetingStaticDataStore.hasData()) {
+      const { meetingId, recordingPolicies } = MeetingStaticDataStore.getMeetingData();
+      if (roomName === meetingId && recordingPolicies?.record === false) return;
+    }
+
+    const [publication] = this.getLocalMicTrackPubs();
+    const track = publication?.track?.mediaStreamTrack;
+    if (!track) return;
+    const mode = getCapturedAudioMode(track);
+    const key = JSON.stringify([roomName, publication.trackSid, mode]);
+    if ((this.queuedMicrophoneMode?.key ?? this.recordedMicrophoneMode) === key) return;
+
+    // Submit changes in capture order and deduplicate only successful updates.
+    const update = { key };
+    this.queuedMicrophoneMode = update;
+    this.microphoneModeRequests = this.microphoneModeRequests.then(async () => {
+      if (this.recordedMicrophoneMode !== key
+        && await recordAudioEvent('AudioProcessingModeChangedEvent', mode, roomName)) {
+        this.recordedMicrophoneMode = key;
+      }
+      if (this.queuedMicrophoneMode === update) this.queuedMicrophoneMode = undefined;
+    });
+  }
+
   private stopOriginalAudio = (): void => originalAudio.setMicrophone();
 
   private syncOriginalAudio(): void {
+    this.recordMicrophoneMode();
     const room = this.activeMicRoom ?? this.primaryRoom;
     const track = this.publicationTrack;
     const enabled = this.role === SENDRECV_ROLE && !this.shouldBeMuted && !track?.isMuted

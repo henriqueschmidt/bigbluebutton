@@ -266,6 +266,13 @@ case class UserConnectionAliveReqMsgBody(
 )
 
 /**
+ * Sent from client to record a microphone processing mode change.
+ */
+object RecordUserAudioEventReqMsg { val NAME = "RecordUserAudioEventReqMsg" }
+case class RecordUserAudioEventReqMsg(header: BbbClientMsgHeader, body: RecordUserAudioEventReqMsgBody) extends StandardMsg
+case class RecordUserAudioEventReqMsgBody(event: String, mode: String, room: String)
+
+/**
  * Sent from client to update clientSettings.
  */
 object SetUserClientSettingsReqMsg { val NAME = "SetUserClientSettingsReqMsg" }

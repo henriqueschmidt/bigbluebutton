@@ -103,6 +103,8 @@ class ReceivedJsonMsgHandlerActor(
         routeGenericMsg[SetUserSpeechLocaleReqMsg](envelope, jsonNode)
       case SetUserCaptionLocaleReqMsg.NAME =>
         routeGenericMsg[SetUserCaptionLocaleReqMsg](envelope, jsonNode)
+      case RecordUserAudioEventReqMsg.NAME =>
+        routeGenericMsg[RecordUserAudioEventReqMsg](envelope, jsonNode)
       case SetUserClientSettingsReqMsg.NAME =>
         routeGenericMsg[SetUserClientSettingsReqMsg](envelope, jsonNode)
       case SetUserEchoTestRunningReqMsg.NAME =>
